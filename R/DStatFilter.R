@@ -216,7 +216,7 @@ DStatFilter <- setRefClass("DStatFilter",
     # Write the filtered table to a file
     saveResult = function(file) {
       write.csv(result, file, row.names = FALSE)
-      cat("Saved", nrow(result), "rows to", file, "\n")
+      message("Saved ", nrow(result), " rows to ", file)
       invisible(.self)
     },
 

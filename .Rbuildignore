@@ -1,7 +1,5 @@
 ^LICENSE$
 ^README\.md$
-^ROADMAP\.md$
 ^\.gitignore$
 ^\.git$
 ^\.github$
-^data-raw$
