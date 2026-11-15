@@ -33,4 +33,4 @@ pair themselves, and it cannot give the direction of gene flow.
 
 ## Licence
 
-Apache License 2.0. See `LICENSE`.
+GPL-3.0 license See `LICENSE`.
