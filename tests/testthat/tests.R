@@ -42,6 +42,37 @@ test_that("only tree-congruent rows are kept and outgroup rows are dropped", {
   expect_true(all(f$result$congruent))
 })
 
+test_that("missing Z values do not produce NA rows in sister admixture output", {
+  rows <- data.frame(H1 = c("A", "A"), H2 = c("B", "B"), H3 = c("C", "C"),
+                     Z = c(NA_real_, 5))
+  s <- filtered(rows)$sisterAdmixture()
+  expect_equal(nrow(s), 1)
+  expect_false(anyNA(s$Z))
+  expect_equal(s$Z, 5)
+})
+
+test_that("numeric species names are treated as character labels", {
+  rows <- data.frame(H1 = "10", H2 = "20", H3 = "30", Z = 5)
+  p <- make_tiny(rows, tree_text = "(((10,20),30),40,O);")
+  f <- DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)$filter()
+  expect_equal(nrow(f$result), 1)
+  expect_equal(f$result$H1, "10")
+  expect_equal(f$result$H2, "20")
+})
+
+test_that("no congruent rows has a distinct sister-admixture error", {
+  rows <- data.frame(H1 = "A", H2 = "C", H3 = "B", Z = 5)
+  f <- filtered(rows)
+  expect_equal(nrow(f$result), 0)
+  expect_error(f$sisterAdmixture(), "No rows to report after filtering")
+})
+
+test_that("multi-tree files are rejected with a clear error", {
+  tree_text <- "(((A,B),C),D,O);\n(((A,C),B),D,O);"
+  p <- make_tiny(tree_text = tree_text)
+  expect_error(DStatFilter$new()$loadTree(p$tree, "O"), "exactly one tree")
+})
+
 test_that("clear errors for the common mistakes", {
   p <- make_tiny()
   expect_error(DStatFilter$new()$loadTree(p$tree, "nope"), "not a tip")

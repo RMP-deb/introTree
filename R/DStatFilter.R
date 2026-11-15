@@ -38,6 +38,9 @@ DStatFilter <- setRefClass("DStatFilter",
     # Read the tree, root it, and work out the depth lookup table
     loadTree = function(file, outgroup_name) {
       tr <- read.tree(file)
+      if (inherits(tr, "multiPhylo")) {
+        stop("Tree file must contain exactly one tree")
+      }
 
       # check the outgroup name is really in the tree
       if (!(outgroup_name %in% tr$tip.label)) {
@@ -78,6 +81,7 @@ DStatFilter <- setRefClass("DStatFilter",
       if (!all(c("H1", "H2", "H3", "Z") %in% names(d))) {
         stop("Table needs columns H1, H2, H3 and Z")
       }
+      d[c("H1", "H2", "H3")] <- lapply(d[c("H1", "H2", "H3")], as.character)
 
       data <<- d
       invisible(.self)
@@ -108,6 +112,7 @@ DStatFilter <- setRefClass("DStatFilter",
       # (H1 != H2 stops a species being compared with itself)
       d$congruent <- d12 > d13 & d12 > d23 & d$H1 != d$H2
       d <- d[d$congruent, ]
+      d <- d[!is.na(d$Z), ]
 
       # significance: p value from Z, then correct for many tests (BH)
       d$abs_Z       <- abs(d$Z)
@@ -130,7 +135,10 @@ DStatFilter <- setRefClass("DStatFilter",
     sisterAdmixture = function(z_threshold = 3, level = c("cherry", "clade"),
                                summary = FALSE) {
       level <- match.arg(level)
-      if (nrow(result) == 0) stop("Run filter() first")
+      if (nrow(result) == 0) {
+        if (ncol(result) == 0) stop("Run filter() first")
+        stop("No rows to report after filtering")
+      }
       r <- result
 
       ntip   <- length(tree$tip.label)
