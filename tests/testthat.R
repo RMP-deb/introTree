@@ -1,4 +1,4 @@
 library(testthat)
-library(dstatree)
+library(introTree)
 
-test_check("dstatree")
+test_check("introTree")

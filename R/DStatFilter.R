@@ -1,4 +1,4 @@
-# dstatree: tree-aware filtering of D-statistic tables
+# introTree: tree-aware filtering of D-statistic tables
 # Copyright (C) 2026 Ruben Muller-Perol
 #
 # This program is free software: you can redistribute it and/or modify

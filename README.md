@@ -1,4 +1,4 @@
-# dstatree
+# introTree
 
 Tree-aware filtering of D-statistic (ABBA-BABA) result tables. Keeps only the
 trios whose topology agrees with a rooted species tree, adjusts for multiple
@@ -8,14 +8,14 @@ testing, and reports significant signals involving true sister pairs.
 
 ```r
 install.packages("remotes")
-remotes::install_github("RMP-deb/dstatree")
+remotes::install_github("RMP-deb/introTree")
 
 ```
 
 ## Use
 
 ```r
-library(dstatree)
+library(introTree)
 
 f <- DStatFilter$new()
 f$loadTree("alignment_chr6.fa.treefile", "macrovipera_chr6")

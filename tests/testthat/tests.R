@@ -1,4 +1,4 @@
-# Core tests for dstatree.
+# Core tests for introTree.
 
 
 # Writes a tiny tree and table to temporary files and returns their paths.
