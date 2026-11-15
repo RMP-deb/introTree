@@ -1,4 +1,4 @@
-# dstatree 0.1.0
+# introTree 0.1.0
 
 * First tagged release.
 * `DStatFilter` class: `loadTree()`, `loadTable()`, `filter()`,
