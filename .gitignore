@@ -3,4 +3,4 @@
 .RData
 *.Rcheck/
 *.tar.gz
-^ROADMAP\.md$
+ROADMAP.md

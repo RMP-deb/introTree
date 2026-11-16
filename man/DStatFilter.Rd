@@ -22,23 +22,27 @@ D-statistic results, keeps only the rows whose topology agrees with the tree
 }
 \section{Methods}{
 \describe{
-  \item{\code{loadTree(file, outgroup_name)}}{read a Newick file and root it on the outgroup.}
+  \item{\code{loadTree(file, outgroup_name)}}{read a single-tree Newick file
+    and root it on the outgroup. Returns the object invisibly.}
   \item{\code{loadTable(file)}}{read a table with columns \code{H1}, \code{H2},
     \code{H3} and \code{Z} (Dsuite names \code{P1}, \code{P2}, \code{P3},
-    \code{Z-score} are renamed).}
+    \code{Z-score} are renamed); species labels are read as character.
+    Returns the object invisibly.}
   \item{\code{filter(z_threshold = 3)}}{keep tree-congruent rows, add
-    \code{abs_Z}, \code{p}, \code{p_adj} (Benjamini-Hochberg) and
-    \code{significant}, sorted by decreasing \code{abs_Z}. Significance is
-    based on \code{abs_Z > z_threshold}; \code{p} and \code{p_adj} are reported
-    for information only. Rows containing the outgroup are dropped.}
-  \item{\code{saveResult(file)}}{write \code{result} to a CSV file.}
+    \code{congruent}, \code{abs_Z}, \code{p}, \code{p_adj} (Benjamini-Hochberg)
+    and \code{significant}, sorted by decreasing \code{abs_Z}. Significance is
+    based on \code{abs_Z > z_threshold}; \code{p} and \code{p_adj} are
+    informational only. Rows containing the outgroup are dropped. Returns the
+    object invisibly.}
+  \item{\code{saveResult(file)}}{write \code{result} to a CSV file and return
+    the object invisibly.}
+  \item{\code{show()}}{print a summary of the tree and loaded and filtered
+    row counts; returns \code{NULL} invisibly.}
 }
-Methods that load or filter return the object invisibly, so calls can be chained.
 }
 \details{
-A D-statistic cannot detect gene flow between the two members of a sister
-pair themselves, and a positive Z is taken to mean H3 shares more derived
-alleles with H2 (the usual (ABBA - BABA) / (ABBA + BABA) convention).
+A positive Z is taken to mean H3 shares more derived alleles with H2 (the
+usual (ABBA - BABA) / (ABBA + BABA) convention).
 }
 \value{An object of class \code{DStatFilter}.}
 \examples{
@@ -55,4 +59,5 @@ f$loadTree(tree_file, "O")
 f$loadTable(table_file)
 f$filter()
 f$result
+unlink(c(tree_file, table_file))
 }
