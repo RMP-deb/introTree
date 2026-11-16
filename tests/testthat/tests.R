@@ -2,7 +2,7 @@
 
 
 # Writes a tiny tree and table to temporary files and returns their paths.
-# Tree: ((((A,B),C),D),O) once rooted on O. A+B is a cherry.
+# Tree: ((((A,B),C),D),O) once rooted on O.
 make_tiny <- function(rows = NULL, tree_text = "(((A,B),C),D,O);") {
   if (is.null(rows)) {
     rows <- data.frame(
@@ -19,77 +19,124 @@ make_tiny <- function(rows = NULL, tree_text = "(((A,B),C),D,O);") {
   list(tree = tree_file, table = table_file)
 }
 
-# Three rows inside the clade A,B,C, used by the sister-pair tests.
-sister_rows <- data.frame(
-  H1 = c("A", "B", "A"),
-  H2 = c("C", "C", "B"),
-  H3 = c("D", "D", "C"),
-  Z  = c(-5, -4, 4.2),
-  stringsAsFactors = FALSE)
-
-filtered <- function(rows = sister_rows) {
-  p <- make_tiny(rows)
-  DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)$filter()
-}
-
-
-test_that("only tree-congruent rows are kept and outgroup rows are dropped", {
+test_that("filter keeps, sorts, and marks tree-congruent rows", {
   p <- make_tiny()
-  f <- DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)$filter()
-  # (A,B;C) and (A,B;D) fit the tree. (A,C;B) and (C,D;A) do not. The O row is dropped.
+  on.exit(unlink(c(p$tree, p$table)), add = TRUE)
+
+  f <- DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)$filter(
+    z_threshold = 4)
+
   expect_equal(nrow(f$result), 2)
-  expect_true(all(f$result$H1 == "A" & f$result$H2 == "B"))
   expect_true(all(f$result$congruent))
+  expect_true(all(f$result$H1 == "A" & f$result$H2 == "B"))
+  expect_equal(f$result$abs_Z, c(4.2, 3.8))
+  expect_equal(f$result$significant, c(TRUE, FALSE))
+  expect_true("p_adj" %in% names(f$result))
+  expect_false(any(f$result$H1 == "A" & f$result$H2 == "B" &
+                     f$result$H3 == "O"))
 })
 
-test_that("clear errors for the common mistakes", {
+test_that("filter returns an empty result when no rows are congruent", {
+  rows <- data.frame(H1 = "A", H2 = "C", H3 = "B", Z = 5)
+  p <- make_tiny(rows)
+  on.exit(unlink(c(p$tree, p$table)), add = TRUE)
+
+  f <- DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)$filter()
+
+  expect_equal(nrow(f$result), 0)
+  expect_true(all(c("congruent", "abs_Z", "p", "p_adj", "significant") %in%
+                    names(f$result)))
+})
+
+test_that("loadTable renames Dsuite columns", {
+  rows <- data.frame(P1 = c("A", "A"), P2 = c("B", "B"), P3 = c("C", "D"),
+                     `Z-score` = c(4.2, -3.8), check.names = FALSE)
+  p <- make_tiny(rows)
+  on.exit(unlink(c(p$tree, p$table)), add = TRUE)
+
+  f <- DStatFilter$new()$loadTable(p$table)
+
+  expect_true(all(c("H1", "H2", "H3", "Z") %in% names(f$data)))
+  expect_false(any(c("P1", "P2", "P3", "Z-score") %in% names(f$data)))
+  expect_equal(f$data$Z, c(4.2, -3.8))
+})
+
+test_that("filter excludes missing Z values", {
+  rows <- data.frame(H1 = c("A", "A"), H2 = c("B", "B"), H3 = c("C", "C"),
+                     Z = c(NA_real_, 5))
+  p <- make_tiny(rows)
+  on.exit(unlink(c(p$tree, p$table)), add = TRUE)
+
+  f <- DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)$filter()
+
+  expect_equal(nrow(f$result), 1)
+  expect_false(anyNA(f$result$Z))
+  expect_equal(f$result$Z, 5)
+})
+
+test_that("loadTable treats numeric species names as character labels", {
+  rows <- data.frame(H1 = "10", H2 = "20", H3 = "30", Z = 5)
+  p <- make_tiny(rows, tree_text = "(((10,20),30),40,O);")
+  on.exit(unlink(c(p$tree, p$table)), add = TRUE)
+
+  f <- DStatFilter$new()$loadTable(p$table)
+
+  expect_type(f$data$H1, "character")
+  expect_equal(f$data$H1, "10")
+  expect_equal(f$data$H2, "20")
+  expect_equal(f$data$H3, "30")
+})
+
+test_that("loadTable rejects missing required columns", {
+  p <- make_tiny(data.frame(H1 = "A", H2 = "B", Z = 1))
+  on.exit(unlink(c(p$tree, p$table)), add = TRUE)
+
+  expect_error(DStatFilter$new()$loadTable(p$table), "needs columns")
+})
+
+test_that("loadTree rejects unknown outgroups and multi-tree files", {
   p <- make_tiny()
+  multi <- make_tiny(tree_text = "(((A,B),C),D,O);\n(((A,C),B),D,O);")
+  on.exit(unlink(c(p$tree, p$table, multi$tree, multi$table)), add = TRUE)
+
   expect_error(DStatFilter$new()$loadTree(p$tree, "nope"), "not a tip")
+  expect_error(DStatFilter$new()$loadTree(multi$tree, "O"), "exactly one tree")
+})
 
-  bad <- make_tiny(data.frame(H1 = "A", H2 = "B", Z = 1))
-  expect_error(DStatFilter$new()$loadTable(bad$table), "needs columns")
+test_that("filter rejects names absent from the tree and requires loadTree", {
+  p <- make_tiny()
+  wrong <- make_tiny(data.frame(H1 = "A", H2 = "B", H3 = "zzz", Z = 1))
+  on.exit(unlink(c(p$tree, p$table, wrong$tree, wrong$table)), add = TRUE)
 
-  wrong <- make_tiny(data.frame(H1 = "A", H2 = "B", H3 = "zzz", Z = 1,
-                                stringsAsFactors = FALSE))
   f <- DStatFilter$new()$loadTree(wrong$tree, "O")$loadTable(wrong$table)
   expect_error(f$filter(), "Names not in tree")
-
   expect_error(DStatFilter$new()$filter(), "loadTree")
-  g <- DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)
-  expect_error(g$sisterAdmixture(), "filter")
 })
 
+test_that("saveResult writes the result and its message can be suppressed", {
+  p <- make_tiny()
+  out <- tempfile(fileext = ".csv")
+  on.exit(unlink(c(p$tree, p$table, out)), add = TRUE)
+  f <- DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)$filter()
 
-test_that("cherry level only sees true sister pairs", {
-  s <- filtered()$sisterAdmixture()
-  expect_equal(nrow(s), 1)
-  expect_equal(c(s$H1, s$H2, s$H3), c("A", "B", "C"))
-  expect_equal(s$clade_size, 2)
+  messages <- character()
+  withCallingHandlers(
+    f$saveResult(out),
+    message = function(m) {
+      messages <<- c(messages, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+
+  expect_true(file.exists(out))
+  expect_equal(nrow(read.csv(out)), nrow(f$result))
+  expect_match(messages, "Saved 2 rows")
 })
 
-test_that("clade level sees every congruent pair, with clade information", {
-  s <- filtered()$sisterAdmixture(level = "clade")
-  expect_equal(nrow(s), 3)
-  expect_true(all(c("clade", "clade_size", "recipient", "toward_side") %in% names(s)))
-})
+test_that("show prints an object summary", {
+  p <- make_tiny()
+  on.exit(unlink(c(p$tree, p$table)), add = TRUE)
+  f <- DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)$filter()
 
-test_that("positive Z points at H2 and negative Z at H1", {
-  s <- filtered()$sisterAdmixture(level = "clade")
-  expect_equal(s$recipient[s$Z > 0], s$H2[s$Z > 0])
-  expect_equal(s$recipient[s$Z < 0], s$H1[s$Z < 0])
-})
-
-test_that("summary groups pairs that point at the same side", {
-  s <- filtered()$sisterAdmixture(level = "clade", summary = TRUE)
-  row <- s[s$H3 == "D", ]
-  expect_equal(row$n_tests, 2)
-  expect_equal(row$n_significant, 2)
-  expect_setequal(strsplit(row$toward_side, ",")[[1]], c("A", "B"))
-})
-
-test_that("summary reports 'mixed' when pairs point at different sides", {
-  mixed <- data.frame(H1 = c("A", "B"), H2 = c("C", "C"), H3 = c("D", "D"),
-                      Z = c(-5, 5), stringsAsFactors = FALSE)
-  s <- filtered(mixed)$sisterAdmixture(level = "clade", summary = TRUE)
-  expect_equal(s$toward_side, "mixed")
+  expect_output(print(f), "DStatFilter object")
 })

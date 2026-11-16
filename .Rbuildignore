@@ -1,7 +1,8 @@
 ^LICENSE$
-^README\.md$
-^ROADMAP\.md$
 ^\.gitignore$
 ^\.git$
 ^\.github$
 ^data-raw$
+^introTree-cran-todo\.md$
+^CRAN-todo_updated\.md$
+^cran-comments\.md$

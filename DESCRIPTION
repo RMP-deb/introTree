@@ -2,15 +2,19 @@ Package: introTree
 Title: Tree-Aware Filtering of D-Statistic Tables
 Version: 0.1.0
 Authors@R: person("Ruben", "Muller-Perol", email = "rubenmullerperol@gmail.com", role = c("aut", "cre"))
-Description: Filters tables of D-statistic (ABBA-BABA) results so that only
-    trios consistent with a rooted species tree are kept. Adds p-values with
-    multiple-testing correction, and reports significant signals involving
-    sister species pairs or larger clades. Can be used through plain functions
-    or through a single object that stores the tree and the table.
+Description: Filters tables of D-statistic (ABBA-BABA test) results so that
+    only trios whose H1 and H2 pairing agrees with a rooted species tree are
+    kept. Tools such as 'ANGSD' report a result for every arrangement of each
+    trio, but only the arrangement matching the species tree is interpretable
+    as a test for gene flow. Trees are read and rooted with 'ape'. P-values
+    and Benjamini-Hochberg adjusted p-values are reported for information;
+    significance is based on a Z-score threshold. The D-statistic is
+    described in Durand et al. (2011) <doi:10.1093/molbev/msr048>.
 License: GPL (>= 3)
 URL: https://github.com/RMP-deb/introTree
 BugReports: https://github.com/RMP-deb/introTree/issues
 Encoding: UTF-8
+Language: en-GB
 Imports: ape, methods, stats, utils
 Suggests: testthat (>= 3.0.0)
 Config/testthat/edition: 3
