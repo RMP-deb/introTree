@@ -1,8 +1,9 @@
 # introTree
 
 Tree-aware filtering of D-statistic (ABBA-BABA) result tables. Keeps only the
-trios whose topology agrees with a rooted species tree, adjusts for multiple
-testing, and reports significant signals involving true sister pairs.
+trios whose topology agrees with a rooted species tree. It reports p-values
+and Benjamini-Hochberg adjusted p-values for information only; significance
+is based on the Z-score threshold.
 
 ## Install
 
@@ -22,7 +23,6 @@ f$loadTree("alignment_chr6.fa.treefile", "macrovipera_chr6")
 f$loadTable("vipera_dstat_jackknife.txt")
 f$filter()
 f                                  # summary
-f$sisterAdmixture()                # significant signals with true sister pairs as H1/H2
 f$saveResult("dstat_clean.csv")
 ```
 

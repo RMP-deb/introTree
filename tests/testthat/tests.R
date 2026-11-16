@@ -19,20 +19,6 @@ make_tiny <- function(rows = NULL, tree_text = "(((A,B),C),D,O);") {
   list(tree = tree_file, table = table_file)
 }
 
-# Three rows inside the clade A,B,C, used by the sister-pair tests.
-sister_rows <- data.frame(
-  H1 = c("A", "B", "A"),
-  H2 = c("C", "C", "B"),
-  H3 = c("D", "D", "C"),
-  Z  = c(-5, -4, 4.2),
-  stringsAsFactors = FALSE)
-
-filtered <- function(rows = sister_rows) {
-  p <- make_tiny(rows)
-  DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)$filter()
-}
-
-
 test_that("only tree-congruent rows are kept and outgroup rows are dropped", {
   p <- make_tiny()
   f <- DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)$filter()
@@ -42,13 +28,14 @@ test_that("only tree-congruent rows are kept and outgroup rows are dropped", {
   expect_true(all(f$result$congruent))
 })
 
-test_that("missing Z values do not produce NA rows in sister admixture output", {
+test_that("rows with missing Z values are excluded from filtered results", {
   rows <- data.frame(H1 = c("A", "A"), H2 = c("B", "B"), H3 = c("C", "C"),
                      Z = c(NA_real_, 5))
-  s <- filtered(rows)$sisterAdmixture()
-  expect_equal(nrow(s), 1)
-  expect_false(anyNA(s$Z))
-  expect_equal(s$Z, 5)
+  p <- make_tiny(rows)
+  f <- DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)$filter()
+  expect_equal(nrow(f$result), 1)
+  expect_false(anyNA(f$result$Z))
+  expect_equal(f$result$Z, 5)
 })
 
 test_that("numeric species names are treated as character labels", {
@@ -58,13 +45,6 @@ test_that("numeric species names are treated as character labels", {
   expect_equal(nrow(f$result), 1)
   expect_equal(f$result$H1, "10")
   expect_equal(f$result$H2, "20")
-})
-
-test_that("no congruent rows has a distinct sister-admixture error", {
-  rows <- data.frame(H1 = "A", H2 = "C", H3 = "B", Z = 5)
-  f <- filtered(rows)
-  expect_equal(nrow(f$result), 0)
-  expect_error(f$sisterAdmixture(), "No rows to report after filtering")
 })
 
 test_that("multi-tree files are rejected with a clear error", {
@@ -86,41 +66,4 @@ test_that("clear errors for the common mistakes", {
   expect_error(f$filter(), "Names not in tree")
 
   expect_error(DStatFilter$new()$filter(), "loadTree")
-  g <- DStatFilter$new()$loadTree(p$tree, "O")$loadTable(p$table)
-  expect_error(g$sisterAdmixture(), "filter")
-})
-
-
-test_that("cherry level only sees true sister pairs", {
-  s <- filtered()$sisterAdmixture()
-  expect_equal(nrow(s), 1)
-  expect_equal(c(s$H1, s$H2, s$H3), c("A", "B", "C"))
-  expect_equal(s$clade_size, 2)
-})
-
-test_that("clade level sees every congruent pair, with clade information", {
-  s <- filtered()$sisterAdmixture(level = "clade")
-  expect_equal(nrow(s), 3)
-  expect_true(all(c("clade", "clade_size", "recipient", "toward_side") %in% names(s)))
-})
-
-test_that("positive Z points at H2 and negative Z at H1", {
-  s <- filtered()$sisterAdmixture(level = "clade")
-  expect_equal(s$recipient[s$Z > 0], s$H2[s$Z > 0])
-  expect_equal(s$recipient[s$Z < 0], s$H1[s$Z < 0])
-})
-
-test_that("summary groups pairs that point at the same side", {
-  s <- filtered()$sisterAdmixture(level = "clade", summary = TRUE)
-  row <- s[s$H3 == "D", ]
-  expect_equal(row$n_tests, 2)
-  expect_equal(row$n_significant, 2)
-  expect_setequal(strsplit(row$toward_side, ",")[[1]], c("A", "B"))
-})
-
-test_that("summary reports 'mixed' when pairs point at different sides", {
-  mixed <- data.frame(H1 = c("A", "B"), H2 = c("C", "C"), H3 = c("D", "D"),
-                      Z = c(-5, 5), stringsAsFactors = FALSE)
-  s <- filtered(mixed)$sisterAdmixture(level = "clade", summary = TRUE)
-  expect_equal(s$toward_side, "mixed")
 })

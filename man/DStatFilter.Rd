@@ -6,8 +6,7 @@
 \description{
 A reference class that stores a rooted species tree and a table of
 D-statistic results, keeps only the rows whose topology agrees with the tree
-(H1 and H2 closer to each other than either is to H3), and can pick out
-significant signals involving true sister pairs.
+(H1 and H2 closer to each other than either is to H3).
 }
 \section{Creating an object}{
 \code{f <- DStatFilter$new()}
@@ -29,17 +28,9 @@ significant signals involving true sister pairs.
     \code{Z-score} are renamed).}
   \item{\code{filter(z_threshold = 3)}}{keep tree-congruent rows, add
     \code{abs_Z}, \code{p}, \code{p_adj} (Benjamini-Hochberg) and
-    \code{significant}, sorted by decreasing \code{abs_Z}. Rows containing the
-    outgroup are dropped.}
-    \item{\code{sisterAdmixture(z_threshold = 3, level = "cherry", summary = FALSE)}}{significant
-    rows where H1 and H2 sit on a split of the tree. With \code{level = "cherry"}
-    only true sister pairs (clades of two species) are used. With
-    \code{level = "clade"} every tree-congruent pair is used and annotated with
-    its \code{clade}, \code{clade_size}, \code{recipient} (H2 if Z is positive,
-    otherwise H1) and \code{toward_side} (the species on the recipient's branch
-    of the split). With \code{summary = TRUE} the result has one row per clade
-    and H3, giving the number of pairs tested and significant, and whether they
-    all point at the same branch (\code{"mixed"} if not). Run \code{filter()} first.}
+    \code{significant}, sorted by decreasing \code{abs_Z}. Significance is
+    based on \code{abs_Z > z_threshold}; \code{p} and \code{p_adj} are reported
+    for information only. Rows containing the outgroup are dropped.}
   \item{\code{saveResult(file)}}{write \code{result} to a CSV file.}
 }
 Methods that load or filter return the object invisibly, so calls can be chained.
@@ -64,5 +55,4 @@ f$loadTree(tree_file, "O")
 f$loadTable(table_file)
 f$filter()
 f$result
-f$sisterAdmixture()
 }
