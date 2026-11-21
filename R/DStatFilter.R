@@ -18,9 +18,7 @@ pairKey <- function(a, b) {
 }
 
 
-# ---------------------------------------------------------------
-# The class
-# ---------------------------------------------------------------
+
 DStatFilter <- setRefClass("DStatFilter",
 
   # Fields = the data each object stores
